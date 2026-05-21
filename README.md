@@ -70,8 +70,3 @@ g++ -std=c++17 -O2 -o maze_solver maze_solver.cpp
 maze_solver/
 ├── maze_solver.cpp   ← Main source file (all algorithms + UI)
 └── README.md
-```
-
----
-
-```
