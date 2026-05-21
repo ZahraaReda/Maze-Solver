@@ -1,4 +1,4 @@
-# Maze Solver — Algorithms Final Project
+# Maze Solver 
 
 > **C++ Console Application**  
 > Graph Traversal with **DFS** (Recursive & Iterative) and **BFS**
@@ -74,31 +74,4 @@ maze_solver/
 
 ---
 
-## Sample Output
-
-```
-============================================================
-           MAZE SOLVER — Algorithms Project
-        DFS (Recursive & Iterative)  |  BFS
-              C++ Console Frontend
-============================================================
-
-  MAIN MENU
-  1) Select a predefined maze
-  2) Enter a custom maze
-  3) Show Complexity Analysis
-  0) Exit
-
-  [BFS] Solution Path:
-  ##############
-   S  *  *  *  ##
-  ######  *  *  ##
-  ##      *  *  ##
-  ##      *  *  E##
-  ##############
-
-  ✓ Path found!
-  Path length   : 9 cells
-  Elapsed time  : 0.0061 ms
-  Steps         : Right → Right → Right → Down → Down → Down → Right → Right
 ```
