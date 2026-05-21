@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Maze Solver</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=DM+Sans:wght@400;500;600&family=Fira+Code:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{min-height:100vh;background:#06060f;font-family:'DM Sans',sans-serif;color:rgba(255,255,255,0.88);padding:24px 16px;position:relative;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background-image:linear-gradient(rgba(255,45,120,0.04) 1px,transparent 1px),linear-gradient(90deg,rgba(168,85,247,0.04) 1px,transparent 1px);background-size:48px 48px;pointer-events:none;z-index:0;animation:gridScroll 25s linear infinite}
+@keyframes gridScroll{from{background-position:0 0}to{background-position:48px 48px}}
+.orb1{position:fixed;width:700px;height:700px;border-radius:50%;background:radial-gradient(circle,rgba(168,85,247,0.14) 0%,transparent 65%);top:-250px;right:-200px;pointer-events:none;z-index:0;animation:orb1f 14s ease-in-out infinite}
+.orb2{position:fixed;width:500px;height:500px;border-radius:50%;background:radial-gradient(circle,rgba(255,45,120,0.1) 0%,transparent 65%);bottom:-150px;left:-150px;pointer-events:none;z-index:0;animation:orb2f 18s ease-in-out infinite}
+@keyframes orb1f{0%,100%{transform:translate(0,0)}50%{transform:translate(-50px,40px)}}
+@keyframes orb2f{0%,100%{transform:translate(0,0)}50%{transform:translate(40px,-50px)}}
+.app{position:relative;z-index:1;max-width:1100px;margin:0 auto}
+header{text-align:center;margin-bottom:32px}
+.logo-row{display:inline-flex;align-items:center;gap:14px;margin-bottom:8px}
+.logo-cube{width:42px;height:42px;border:1.5px solid #ff2d78;display:grid;grid-template-columns:repeat(3,1fr);gap:3px;padding:5px;animation:cubeGlow 2s ease-in-out infinite alternate,cubeSpin 8s linear infinite;box-shadow:0 0 24px rgba(255,45,120,0.45)}
+@keyframes cubeGlow{from{box-shadow:0 0 18px rgba(255,45,120,0.35)}to{box-shadow:0 0 40px rgba(255,45,120,0.8),0 0 80px rgba(168,85,247,0.3)}}
+@keyframes cubeSpin{0%{border-color:#ff2d78}25%{border-color:#a855f7}50%{border-color:#3b82f6}75%{border-color:#a855f7}100%{border-color:#ff2d78}}
+.logo-cube span{background:#ff2d78;border-radius:1px;opacity:0.15;transition:all 0.3s}
+.logo-cube span:nth-child(2),.logo-cube span:nth-child(4),.logo-cube span:nth-child(6),.logo-cube span:nth-child(8){opacity:1}
+.logo-cube:hover span{opacity:1;background:var(--c,#ff2d78)}
+.logo-cube span:nth-child(1){--c:#a855f7}.logo-cube span:nth-child(3){--c:#3b82f6}.logo-cube span:nth-child(5){--c:#ff2d78}.logo-cube span:nth-child(7){--c:#3b82f6}.logo-cube span:nth-child(9){--c:#a855f7}
+h1{font-family:'Syne',sans-serif;font-size:2.4rem;font-weight:800;background:linear-gradient(135deg,#ff2d78,#a855f7,#3b82f6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:2px;animation:hShimmer 5s ease-in-out infinite}
+@keyframes hShimmer{0%,100%{filter:brightness(1)}50%{filter:brightness(1.3)}}
+.subtitle{font-family:'Fira Code',monospace;font-size:0.78rem;color:rgba(255,255,255,0.3);letter-spacing:3px;text-transform:uppercase;margin-top:4px}
+.glass{background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:20px;backdrop-filter:blur(14px);position:relative;overflow:hidden}
+.glass::before{content:'';position:absolute;top:0;left:0;width:100%;height:1.5px;background:linear-gradient(90deg,transparent,#ff2d78,#a855f7,#3b82f6,transparent)}
+.main{display:grid;grid-template-columns:256px 1fr;gap:16px;align-items:start}
+.sidebar{display:flex;flex-direction:column;gap:12px}
+.glass-panel{padding:18px}
+.panel-label{font-family:'Fira Code',monospace;font-size:10px;letter-spacing:3px;color:#ff2d78;text-transform:uppercase;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.07)}
+.algo-list{display:flex;flex-direction:column;gap:6px}
+.algo-btn{width:100%;padding:11px 14px;background:transparent;border:1px solid rgba(255,255,255,0.08);border-radius:12px;color:rgba(255,255,255,0.45);font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;text-align:left;display:flex;justify-content:space-between;align-items:center;transition:all 0.2s}
+.algo-btn:hover{border-color:rgba(255,45,120,0.4);color:rgba(255,255,255,0.8);transform:translateX(4px)}
+.algo-btn.active{background:rgba(255,45,120,0.12);border-color:rgba(255,45,120,0.6);color:#fff;box-shadow:0 0 20px rgba(255,45,120,0.2),inset 0 0 20px rgba(255,45,120,0.05)}
+.algo-tag{font-size:10px;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.35)}
+.algo-btn.active .algo-tag{background:rgba(255,45,120,0.25);color:#ff8ab4}
+.sel{width:100%;padding:9px 12px;border-radius:12px;border:1px solid rgba(255,255,255,0.08);background:rgba(255,255,255,0.05);color:rgba(255,255,255,0.8);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;outline:none;appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='rgba(255,255,255,0.3)' stroke-width='2' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px;transition:border-color 0.2s}
+.sel:focus{border-color:rgba(255,45,120,0.5)}
+.sel option{background:#0d0d1f}
+.speed-wrap{display:flex;align-items:center;gap:10px;margin-top:4px}
+.speed-wrap span{font-size:11px;color:rgba(255,255,255,0.3)}
+input[type=range]{flex:1;-webkit-appearance:none;height:3px;background:rgba(255,255,255,0.1);outline:none;border-radius:2px}
+input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:#ff2d78;cursor:pointer;box-shadow:0 0 10px rgba(255,45,120,0.7)}
+.speed-val{font-family:'Fira Code',monospace;font-size:12px;color:#ff2d78;width:16px;text-align:right}
+.run-btn{width:100%;margin-top:16px;padding:14px;background:linear-gradient(135deg,#ff2d78,#a855f7);border:none;border-radius:14px;color:#fff;font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;letter-spacing:2px;cursor:pointer;box-shadow:0 0 30px rgba(255,45,120,0.4);transition:all 0.2s;position:relative;overflow:hidden}
+.run-btn::after{content:'';position:absolute;top:-50%;left:-75%;width:50%;height:200%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);transform:skewX(-20deg);animation:btnShimmer 2.5s ease infinite}
+@keyframes btnShimmer{0%,100%{left:-75%}60%{left:125%}}
+.run-btn:hover{opacity:0.88;transform:translateY(-2px);box-shadow:0 0 50px rgba(255,45,120,0.65)}
+.run-btn:disabled{background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.25);cursor:not-allowed;transform:none;box-shadow:none}
+.run-btn:disabled::after{display:none}
+.reset-btn{width:100%;margin-top:8px;padding:10px;background:transparent;border:1px solid rgba(255,255,255,0.08);border-radius:12px;color:rgba(255,255,255,0.35);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;transition:all 0.2s}
+.reset-btn:hover{border-color:rgba(255,45,120,0.4);color:#ff2d78}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stat{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:12px;text-align:center;transition:all 0.4s}
+.stat.lit{border-color:rgba(255,45,120,0.5);box-shadow:0 0 20px rgba(255,45,120,0.15)}
+.stat-val{font-family:'Fira Code',monospace;font-size:1.4rem;color:#fff;display:block;transition:all 0.3s}
+.stat.lit .stat-val{color:#ff2d78;text-shadow:0 0 16px rgba(255,45,120,0.6)}
+.stat-lbl{font-size:10px;color:rgba(255,255,255,0.3);text-transform:uppercase;letter-spacing:1px;margin-top:2px}
+@keyframes popVal{0%{transform:scale(1.5);opacity:0.3}100%{transform:scale(1);opacity:1}}
+.stat-val.pop{animation:popVal 0.4s cubic-bezier(0.34,1.56,0.64,1)}
+.cx{font-family:'Fira Code',monospace;font-size:12px;line-height:2.3;color:rgba(255,255,255,0.35)}
+.cx .v{color:#c4b5fd}.cx .ok{color:#34d399}.cx .no{color:#ff2d78}
+.right{display:flex;flex-direction:column;gap:12px}
+.status-bar{padding:10px 16px;border-radius:12px;display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);font-family:'Fira Code',monospace;font-size:12px;color:rgba(255,255,255,0.35);transition:all 0.3s}
+.status-bar.running{border-color:rgba(255,45,120,0.3);box-shadow:0 0 20px rgba(255,45,120,0.08)}
+.status-bar.done{border-color:rgba(52,211,153,0.3);box-shadow:0 0 20px rgba(52,211,153,0.08)}
+.dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,0.15);flex-shrink:0;transition:all 0.3s}
+.dot.run{background:#ff2d78;box-shadow:0 0 10px #ff2d78;animation:blink 0.7s ease infinite alternate}
+.dot.done{background:#34d399;box-shadow:0 0 10px #34d399}
+.dot.err{background:#ef4444}
+@keyframes blink{from{opacity:1}to{opacity:0.15}}
+.banner{padding:12px 18px;border-radius:14px;display:none;align-items:center;gap:10px;font-weight:600;font-size:14px}
+.banner.found{display:flex;background:rgba(52,211,153,0.08);border:1px solid rgba(52,211,153,0.35);color:#34d399;animation:banIn 0.5s cubic-bezier(0.34,1.56,0.64,1)}
+.banner.lost{display:flex;background:rgba(255,45,120,0.08);border:1px solid rgba(255,45,120,0.35);color:#ff2d78;animation:banIn 0.5s cubic-bezier(0.34,1.56,0.64,1)}
+@keyframes banIn{from{opacity:0;transform:translateY(-6px) scale(0.97)}to{opacity:1;transform:none}}
+.maze-panel{padding:28px;display:flex;flex-direction:column;align-items:center;gap:18px}
+#grid{display:grid;gap:3px}
+.cell{width:34px;height:34px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-family:'Fira Code',monospace;font-size:11px;font-weight:700;transition:background 0.15s,box-shadow 0.15s}
+.wall{background:rgba(255,255,255,0.06)}
+.open{background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.05)}
+.start{background:rgba(52,211,153,0.18);border:1.5px solid #34d399;color:#34d399;box-shadow:0 0 12px rgba(52,211,153,0.35);animation:sGlow 2s ease-in-out infinite alternate}
+.end{background:rgba(255,45,120,0.18);border:1.5px solid #ff2d78;color:#ff2d78;box-shadow:0 0 12px rgba(255,45,120,0.35);animation:eGlow 2s ease-in-out infinite alternate}
+@keyframes sGlow{from{box-shadow:0 0 8px rgba(52,211,153,0.3)}to{box-shadow:0 0 22px rgba(52,211,153,0.8)}}
+@keyframes eGlow{from{box-shadow:0 0 8px rgba(255,45,120,0.3)}to{box-shadow:0 0 22px rgba(255,45,120,0.8)}}
+.visited{background:rgba(168,85,247,0.2);border:1px solid rgba(168,85,247,0.4);animation:vPop 0.3s cubic-bezier(0.34,1.56,0.64,1)}
+@keyframes vPop{0%{transform:scale(0.4);background:rgba(168,85,247,0.7)}60%{transform:scale(1.15)}100%{transform:scale(1)}}
+.solution{background:rgba(251,191,36,0.2);border:1.5px solid #fbbf24;animation:sPop 0.25s cubic-bezier(0.34,1.56,0.64,1),sGlowY 1s ease-in-out infinite alternate}
+@keyframes sPop{from{transform:scale(0.5);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes sGlowY{from{box-shadow:0 0 4px rgba(251,191,36,0.2)}to{box-shadow:0 0 18px rgba(251,191,36,0.9)}}
+.sol-s{background:rgba(52,211,153,0.28);border:2px solid #34d399;color:#34d399;box-shadow:0 0 16px rgba(52,211,153,0.5);animation:sPop 0.3s ease}
+.sol-e{background:rgba(255,45,120,0.28);border:2px solid #ff2d78;color:#ff2d78;box-shadow:0 0 16px rgba(255,45,120,0.5);animation:sPop 0.3s ease}
+.legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:rgba(255,255,255,0.35)}
+.leg{display:flex;align-items:center;gap:6px}
+.leg-box{width:13px;height:13px;border-radius:3px;flex-shrink:0}
+.steps{font-family:'Fira Code',monospace;font-size:11px;color:rgba(255,255,255,0.35);line-height:1.9;word-break:break-all;display:none;padding:12px 16px;border-radius:12px;background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);animation:fadeUp 0.4s ease}
+.steps.show{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.arr{color:#ff2d78}
+.bottom-panel{padding:20px 28px}
+.bottom-inner{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;align-items:start}
+.cmp-row{display:flex;flex-direction:column;gap:4px;margin-bottom:8px}
+.cmp-label{font-family:'Fira Code',monospace;font-size:10px;color:rgba(255,255,255,0.4);letter-spacing:1px;display:flex;justify-content:space-between}
+.cmp-bar-wrap{height:6px;background:rgba(255,255,255,0.06);border-radius:3px;overflow:hidden}
+.cmp-bar{height:100%;border-radius:3px;width:0%;transition:width 1.2s cubic-bezier(0.34,1.1,0.64,1)}
+.bar-dfs-r{background:linear-gradient(90deg,#ff2d78,#ff6da0)}
+.bar-dfs-i{background:linear-gradient(90deg,#a855f7,#c084fc)}
+.bar-bfs{background:linear-gradient(90deg,#3b82f6,#60a5fa)}
+#traceCanvas{border-radius:10px;display:block;opacity:0.85}
+.algo-facts{display:flex;flex-direction:column;gap:10px}
+.fact-card{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.07);border-radius:12px;padding:10px 12px;transition:border-color 0.3s}
+.fact-card:hover{border-color:rgba(255,45,120,0.35)}
+.fact-name{font-family:'Fira Code',monospace;font-size:11px;font-weight:700;margin-bottom:4px}
+.fact-name.pink{color:#ff2d78}.fact-name.purple{color:#a855f7}.fact-name.blue{color:#3b82f6}
+.fact-desc{font-size:11px;color:rgba(255,255,255,0.35);line-height:1.5}
+@media(max-width:700px){.main{grid-template-columns:1fr}h1{font-size:1.8rem}.bottom-inner{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="orb1"></div><div class="orb2"></div>
+<div class="app">
+<header>
+  <div class="logo-row">
+    <div class="logo-cube"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
+    <h1>MAZE_SOLVER</h1>
+  </div>
+  <p class="subtitle">DFS Recursive &nbsp;Â·&nbsp; DFS Iterative &nbsp;Â·&nbsp; BFS</p>
+</header>
+
+<div class="main">
+  <div class="sidebar">
+    <div class="glass glass-panel">
+      <div class="panel-label">// Algorithm</div>
+      <div class="algo-list">
+        <button class="algo-btn active" data-algo="dfs-r" onclick="pickAlgo(this)">DFS Recursive<span class="algo-tag">Stack</span></button>
+        <button class="algo-btn" data-algo="dfs-i" onclick="pickAlgo(this)">DFS Iterative<span class="algo-tag">Stack</span></button>
+        <button class="algo-btn" data-algo="bfs" onclick="pickAlgo(this)">BFS<span class="algo-tag">â˜… Shortest</span></button>
+      </div>
+    </div>
+    <div class="glass glass-panel">
+      <div class="panel-label">// Maze</div>
+      <select class="sel" onchange="loadMaze(+this.value)">
+        <option value="0">Small (6x7)</option>
+        <option value="1">Medium (10x10)</option>
+        <option value="2">No solution (3x5)</option>
+        <option value="3">Open grid (6x8)</option>
+        <option value="4">Complex (12x12)</option>
+      </select>
+      <div class="panel-label" style="margin-top:14px">// Speed</div>
+      <div class="speed-wrap">
+        <span>Slow</span>
+        <input type="range" min="1" max="10" value="5" id="spd" oninput="spd=+this.value;document.getElementById('sv').textContent=this.value">
+        <span>Fast</span>
+        <span class="speed-val" id="sv">5</span>
+      </div>
+      <button class="run-btn" id="runBtn" onclick="runAlgo()">&#9654; RUN</button>
+      <button class="reset-btn" onclick="reset()">&#8635; Reset</button>
+    </div>
+    <div class="glass glass-panel">
+      <div class="panel-label">// Stats</div>
+      <div class="stats-grid">
+        <div class="stat" id="st0"><span class="stat-val" id="sVis">&#8212;</span><div class="stat-lbl">Visited</div></div>
+        <div class="stat" id="st1"><span class="stat-val" id="sPath">&#8212;</span><div class="stat-lbl">Path</div></div>
+        <div class="stat" id="st2"><span class="stat-val" id="sTime">&#8212;</span><div class="stat-lbl">ms</div></div>
+        <div class="stat" id="st3"><span class="stat-val" id="sAlgo" style="font-size:0.9rem">DFS-R</span><div class="stat-lbl">Algo</div></div>
+      </div>
+      <div class="panel-label" style="margin-top:14px">// Complexity</div>
+      <div class="cx" id="cxBox">
+        Time&nbsp;&nbsp;: <span class="v">O(V+E)</span><br>
+        Space : <span class="v">O(V)</span> stack<br>
+        Short : <span class="no">&#10007; No</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="right">
+    <div class="status-bar" id="statusBar"><div class="dot" id="dot"></div><span id="stTxt">Select an algorithm and press RUN</span></div>
+    <div class="banner" id="banner"><span id="bIcon"></span><span id="bTxt"></span></div>
+    <div class="glass maze-panel">
+      <div id="grid"></div>
+      <div class="legend">
+        <div class="leg"><div class="leg-box" style="background:rgba(255,255,255,0.06)"></div>Wall</div>
+        <div class="leg"><div class="leg-box" style="background:rgba(52,211,153,0.3);border:1px solid #34d399"></div>Start</div>
+        <div class="leg"><div class="leg-box" style="background:rgba(255,45,120,0.3);border:1px solid #ff2d78"></div>Exit</div>
+        <div class="leg"><div class="leg-box" style="background:rgba(168,85,247,0.3);border:1px solid #a855f7"></div>Visited</div>
+        <div class="leg"><div class="leg-box" style="background:rgba(251,191,36,0.3);border:1px solid #fbbf24"></div>Solution &#9733;</div>
+      </div>
+    </div>
+    <div class="steps" id="steps"></div>
+
+    <div class="glass bottom-panel">
+      <div class="panel-label">// Algorithm Intelligence</div>
+      <div class="bottom-inner">
+        <div>
+          <div style="font-family:'Fira Code',monospace;font-size:10px;color:rgba(255,255,255,0.3);letter-spacing:2px;margin-bottom:10px">EFFICIENCY SCORE</div>
+          <div class="cmp-row">
+            <div class="cmp-label"><span style="color:#ff2d78">DFS-R</span><span id="eff0">&#8212;</span></div>
+            <div class="cmp-bar-wrap"><div class="cmp-bar bar-dfs-r" id="bar0"></div></div>
+          </div>
+          <div class="cmp-row">
+            <div class="cmp-label"><span style="color:#a855f7">DFS-I</span><span id="eff1">&#8212;</span></div>
+            <div class="cmp-bar-wrap"><div class="cmp-bar bar-dfs-i" id="bar1"></div></div>
+          </div>
+          <div class="cmp-row">
+            <div class="cmp-label"><span style="color:#3b82f6">BFS</span><span id="eff2">&#8212;</span></div>
+            <div class="cmp-bar-wrap"><div class="cmp-bar bar-bfs" id="bar2"></div></div>
+          </div>
+          <div style="margin-top:16px;font-family:'Fira Code',monospace;font-size:10px;color:rgba(255,255,255,0.3);letter-spacing:2px;margin-bottom:8px">LIVE PATH TRACE</div>
+          <canvas id="traceCanvas" width="180" height="90"></canvas>
+        </div>
+        <div>
+          <div style="font-family:'Fira Code',monospace;font-size:10px;color:rgba(255,255,255,0.3);letter-spacing:2px;margin-bottom:10px">SEARCH PATTERN</div>
+          <canvas id="patternCanvas" width="220" height="160" style="border-radius:10px;display:block"></canvas>
+          <div id="patternLabel" style="font-family:'Fira Code',monospace;font-size:10px;color:rgba(255,255,255,0.25);margin-top:8px;text-align:center">run to see pattern</div>
+        </div>
+        <div class="algo-facts">
+          <div class="fact-card">
+            <div class="fact-name pink">DFS Recursive</div>
+            <div class="fact-desc">Explores as deep as possible using the call stack. Fast but not optimal. May miss shorter paths.</div>
+          </div>
+          <div class="fact-card">
+            <div class="fact-name purple">DFS Iterative</div>
+            <div class="fact-desc">Same logic as recursive but uses an explicit stack â€” avoids stack overflow on large mazes.</div>
+          </div>
+          <div class="fact-card">
+            <div class="fact-name blue">BFS &#9733;</div>
+            <div class="fact-desc">Explores level by level using a queue. Guarantees the shortest path on unweighted grids.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+const MAZES=[
+  ["#######","S     #","#### ##","#      ","## ### ","#    E#","#######"],
+  ["##########","S        #","# ######  ","#      # #","###### # #","#      # #","# ## ### #","#  #    ##","## # ## ##","##   #  E#"],
+  ["#####","S # E","#####"],
+  ["########","S       ","        ","        ","       E","########"],
+  ["############","S  #   #   #","## # # # # #","#  # # # # #","# ## # ### #","#    #     #","# ## ##### #","# #  #     #","# # ## # ###","#   #  # # #","### # ##   #","###      E #"],
+];
+const DR=[1,-1,0,0],DC=[0,0,1,-1],DN=["â†“","â†‘","â†’","â†"];
+let maze=[],algo="dfs-r",running=false,spd=5,cells=[],visitLog=[];
+
+function loadMaze(i){maze=MAZES[i].map(r=>r.split(""));reset();}
+function reset(){
+  if(running)return;
+  document.getElementById("banner").className="banner";
+  document.getElementById("steps").className="steps";
+  document.getElementById("statusBar").className="status-bar";
+  setSt("","Select an algorithm and press RUN");
+  ["sVis","sPath","sTime"].forEach(id=>document.getElementById(id).textContent="â€”");
+  [0,1,2,3].forEach(i=>document.getElementById("st"+i).classList.remove("lit"));
+  visitLog=[];clearCanvas();render();
+}
+function render(){
+  const g=document.getElementById("grid"),cols=maze[0].length;
+  g.style.gridTemplateColumns="repeat("+cols+",34px)";
+  g.innerHTML="";cells=[];
+  maze.forEach((row,r)=>row.forEach((ch,c)=>{
+    const el=document.createElement("div");
+    el.className="cell "+cls(ch);
+    if(ch==="S"||ch==="E")el.textContent=ch;
+    g.appendChild(el);cells.push(el);
+  }));
+}
+function cls(ch){return ch==="#"?"wall":ch==="S"?"start":ch==="E"?"end":"open";}
+function gc(r,c){return cells[r*maze[0].length+c];}
+function valid(r,c,vis){return r>=0&&r<maze.length&&c>=0&&c<maze[0].length&&maze[r][c]!=="#"&&!vis[r][c];}
+function setSt(s,t){
+  document.getElementById("dot").className="dot"+(s?" "+s:"");
+  document.getElementById("stTxt").textContent=t;
+  const bar=document.getElementById("statusBar");
+  bar.className="status-bar"+(s==="run"?" running":s==="done"?" done":"");
+}
+function animStat(id,val,idx){
+  const el=document.getElementById(id);
+  el.textContent=val;el.classList.remove("pop");
+  void el.offsetWidth;el.classList.add("pop");
+  document.getElementById("st"+idx).classList.add("lit");
+}
+function wait(){return new Promise(r=>setTimeout(r,Math.max(1,130-spd*12)));}
+function pickAlgo(btn){
+  if(running)return;
+  document.querySelectorAll(".algo-btn").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");algo=btn.dataset.algo;
+  document.getElementById("sAlgo").textContent={"dfs-r":"DFS-R","dfs-i":"DFS-I","bfs":"BFS"}[algo];
+  const cx=document.getElementById("cxBox");
+  if(algo==="bfs")cx.innerHTML='Time&nbsp;&nbsp;: <span class="v">O(V+E)</span><br>Space : <span class="v">O(V)</span> queue<br>Short : <span class="ok">âœ“ YES</span>';
+  else cx.innerHTML="Time&nbsp;&nbsp;: <span class='v'>O(V+E)</span><br>Space : <span class='v'>O(V)</span> "+(algo==="dfs-r"?"call stack":"explicit stack")+"<br>Short : <span class='no'>âœ— No</span>";
+}
+async function dfsRec(vis,r,c,er,ec,path,vc){
+  if(r<0||r>=maze.length||c<0||c>=maze[0].length)return false;
+  if(maze[r][c]==="#"||vis[r][c])return false;
+  vis[r][c]=true;vc.n++;path.push([r,c]);visitLog.push([r,c]);
+  const ch=maze[r][c];
+  if(ch!=="S"&&ch!=="E"){gc(r,c).className="cell visited";await wait();}
+  if(r===er&&c===ec)return true;
+  for(let d=0;d<4;d++)if(await dfsRec(vis,r+DR[d],c+DC[d],er,ec,path,vc))return true;
+  path.pop();return false;
+}
+async function dfsIter(sr,sc,er,ec){
+  const rows=maze.length,cols=maze[0].length;
+  const vis=Array.from({length:rows},()=>Array(cols).fill(false));
+  const stk=[{r:sr,c:sc,path:[[sr,sc]]}];vis[sr][sc]=true;let n=0;
+  while(stk.length){
+    const{r,c,path}=stk.pop();n++;visitLog.push([r,c]);
+    const ch=maze[r][c];
+    if(ch!=="S"&&ch!=="E"){gc(r,c).className="cell visited";await wait();}
+    if(r===er&&c===ec)return{path,n};
+    for(let d=3;d>=0;d--){const nr=r+DR[d],nc=c+DC[d];
+      if(valid(nr,nc,vis)){vis[nr][nc]=true;stk.push({r:nr,c:nc,path:[...path,[nr,nc]]});}}
+  }
+  return{path:null,n};
+}
+async function bfsAlg(sr,sc,er,ec){
+  const rows=maze.length,cols=maze[0].length;
+  const vis=Array.from({length:rows},()=>Array(cols).fill(false));
+  const par={},q=[[sr,sc]];vis[sr][sc]=true;let n=0;
+  while(q.length){
+    const[r,c]=q.shift();n++;visitLog.push([r,c]);
+    const ch=maze[r][c];
+    if(ch!=="S"&&ch!=="E"){gc(r,c).className="cell visited";await wait();}
+    if(r===er&&c===ec){
+      const path=[];let cur=er+","+ec,sk=sr+","+sc;
+      while(cur!==sk){const[pr,pc]=cur.split(",").map(Number);path.unshift([pr,pc]);cur=par[cur];}
+      path.unshift([sr,sc]);return{path,n};
+    }
+    for(let d=0;d<4;d++){const nr=r+DR[d],nc=c+DC[d];
+      if(valid(nr,nc,vis)){vis[nr][nc]=true;par[nr+","+nc]=r+","+c;q.push([nr,nc]);}}
+  }
+  return{path:null,n};
+}
+function findCh(ch){for(let r=0;r<maze.length;r++)for(let c=0;c<maze[0].length;c++)if(maze[r][c]===ch)return[r,c];return null;}
+function clearCanvas(){
+  ["traceCanvas","patternCanvas"].forEach(id=>{const c=document.getElementById(id);c.getContext("2d").clearRect(0,0,c.width,c.height)});
+  document.getElementById("patternLabel").textContent="run to see pattern";
+}
+function drawTraceCanvas(path){
+  if(!path||path.length<2)return;
+  const c=document.getElementById("traceCanvas"),ctx=c.getContext("2d");
+  ctx.clearRect(0,0,c.width,c.height);
+  const rows=maze.length,cols=maze[0].length,sx=c.width/cols,sy=c.height/rows;
+  const grad=ctx.createLinearGradient(0,0,c.width,c.height);
+  grad.addColorStop(0,"#34d399");grad.addColorStop(0.5,"#fbbf24");grad.addColorStop(1,"#ff2d78");
+  ctx.strokeStyle=grad;ctx.lineWidth=2;ctx.lineCap="round";ctx.lineJoin="round";
+  ctx.beginPath();
+  path.forEach(([r,ci],i)=>{const x=ci*sx+sx/2,y=r*sy+sy/2;i===0?ctx.moveTo(x,y):ctx.lineTo(x,y);});
+  ctx.stroke();
+  const[sr,sc]=path[0];ctx.beginPath();ctx.arc(sc*sx+sx/2,sr*sy+sy/2,3,0,Math.PI*2);ctx.fillStyle="#34d399";ctx.fill();
+  const[er,ec]=path[path.length-1];ctx.beginPath();ctx.arc(ec*sx+sx/2,er*sy+sy/2,3,0,Math.PI*2);ctx.fillStyle="#ff2d78";ctx.fill();
+}
+function drawPatternCanvas(visits,path){
+  const c=document.getElementById("patternCanvas"),ctx=c.getContext("2d");
+  ctx.clearRect(0,0,c.width,c.height);
+  const rows=maze.length,cols=maze[0].length,cw=c.width/cols,ch=c.height/rows;
+  maze.forEach((row,r)=>row.forEach((cell,col)=>{
+    if(cell==="#"){ctx.fillStyle="rgba(255,255,255,0.06)";ctx.fillRect(col*cw+1,r*ch+1,cw-2,ch-2);}
+  }));
+  visits.forEach(([r,col],i)=>{
+    const t=i/visits.length;
+    ctx.fillStyle="rgba(168,85,247,"+(0.15+t*0.45)+")";
+    ctx.fillRect(col*cw+1,r*ch+1,cw-2,ch-2);
+  });
+  if(path){path.forEach(([r,col])=>{const c2=maze[r][col];if(c2!=="S"&&c2!=="E"){ctx.fillStyle="rgba(251,191,36,0.7)";ctx.fillRect(col*cw+1,r*ch+1,cw-2,ch-2);}});}
+  document.getElementById("patternLabel").textContent=visits.length+" cells explored";
+}
+function updateEffBars(visited){
+  const total=maze.length*maze[0].length;
+  const eff=Math.max(0,100-Math.round((visited/total)*100));
+  const map={"dfs-r":["bar0","eff0"],"dfs-i":["bar1","eff1"],"bfs":["bar2","eff2"]};
+  const[bid,eid]=map[algo];
+  const b=document.getElementById(bid);
+  b.style.width="0%";void b.offsetWidth;b.style.width=eff+"%";
+  document.getElementById(eid).textContent=eff+"%";
+}
+async function runAlgo(){
+  if(running)return;running=true;
+  document.getElementById("runBtn").disabled=true;
+  document.getElementById("banner").className="banner";
+  document.getElementById("steps").className="steps";
+  [0,1,2,3].forEach(i=>document.getElementById("st"+i).classList.remove("lit"));
+  visitLog=[];clearCanvas();render();
+  const S=findCh("S"),E=findCh("E");
+  if(!S||!E){setSt("err","Maze needs S and E");running=false;document.getElementById("runBtn").disabled=false;return;}
+  const[sr,sc]=S,[er,ec]=E;
+  const names={"dfs-r":"DFS Recursive","dfs-i":"DFS Iterative","bfs":"BFS"};
+  setSt("run","Running "+names[algo]+"...");
+  const t0=performance.now();
+  let path=null,visited=0;
+  if(algo==="dfs-r"){
+    const vis=Array.from({length:maze.length},()=>Array(maze[0].length).fill(false));
+    const p=[],vc={n:0};
+    path=(await dfsRec(vis,sr,sc,er,ec,p,vc))?p:null;visited=vc.n;
+  }else if(algo==="dfs-i"){
+    const res=await dfsIter(sr,sc,er,ec);path=res.path;visited=res.n;
+  }else{
+    const res=await bfsAlg(sr,sc,er,ec);path=res.path;visited=res.n;
+  }
+  const ms=(performance.now()-t0).toFixed(1);
+  animStat("sVis",visited,0);animStat("sTime",ms,2);
+  animStat("sAlgo",{"dfs-r":"DFS-R","dfs-i":"DFS-I","bfs":"BFS"}[algo],3);
+  if(path){
+    animStat("sPath",path.length,1);
+    for(const[r,c]of path){
+      const ch=maze[r][c];
+      gc(r,c).className="cell "+(ch==="S"?"sol-s":ch==="E"?"sol-e":"solution");
+      await new Promise(r=>setTimeout(r,38));
+    }
+    const dirs=[];
+    for(let i=1;i<path.length;i++){
+      const dr=path[i][0]-path[i-1][0],dc=path[i][1]-path[i-1][1];
+      for(let d=0;d<4;d++)if(DR[d]===dr&&DC[d]===dc){dirs.push(DN[d]);break;}
+    }
+    const st=document.getElementById("steps");
+    st.innerHTML='<span style="color:#a855f7;font-weight:700">Path:</span> '+dirs.map(d=>'<span class="arr">'+d+'</span>').join(" ");
+    st.className="steps show";
+    document.getElementById("bIcon").textContent="âœ“";
+    document.getElementById("bTxt").textContent="Path found â€” "+path.length+" cells Â· "+visited+" visited Â· "+ms+"ms";
+    document.getElementById("banner").className="banner found";
+    setSt("done",names[algo]+" â€” done");
+    drawTraceCanvas(path);drawPatternCanvas(visitLog,path);updateEffBars(visited);
+  }else{
+    animStat("sPath","0",1);
+    document.getElementById("bIcon").textContent="âœ—";
+    document.getElementById("bTxt").textContent="No path exists from S to E";
+    document.getElementById("banner").className="banner lost";
+    setSt("err","No path found");
+    drawPatternCanvas(visitLog,null);updateEffBars(visited);
+  }
+  running=false;document.getElementById("runBtn").disabled=false;
+}
+loadMaze(0);
+</script>
+</body>
+</html>
